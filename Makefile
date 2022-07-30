@@ -30,7 +30,7 @@
 ## OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ##
 ## Contributors:
-##    Steven Simpson <s.simpson at lancaster.ac.uk>
+##    Steven Simpson <https://github.com/simpsonst>
 
 all::
 

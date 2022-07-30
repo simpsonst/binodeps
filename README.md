@@ -63,4 +63,4 @@ function make () {
 …or do an equivalent in `/usr/local/bin`.
 However, either way, `sudo` won't pick it up.
 
-If you're developing a C or C++ program or library, and want Binodeps to simplify the maintenance of dependencies, there are [detailed instructions](https://scc-forge.lancaster.ac.uk/open/simpsons/software/pkg-binodeps).
+If you're developing a C or C++ program or library, and want Binodeps to simplify the maintenance of dependencies, there are [detailed instructions](https://www.lancaster.ac.uk/~simpsons/software/pkg-binodeps).
