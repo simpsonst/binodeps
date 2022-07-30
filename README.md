@@ -42,4 +42,25 @@ For convenience, you can set it with the environment variable `MAKEFLAGS`, e.g.:
 export MAKEFLAGS="-I$HOME/.local/include"
 ```
 
+You could also emulate a colon-separated `MAKEPATH` environment variable like this:
+
+```
+## in ~/.bash_aliases
+function make () {
+    local seq="$MAKEPATH"
+    local args=()
+    local hdr
+    while hdr="${seq%%:*}"
+          [ "$hdr" ] ; do
+        args+=("-I$hdr")
+        seq="${seq#"$hdr"}"
+        seq="${seq#:}"
+    done
+    $(which make) "${args[@]}" "$@"
+}
+```
+
+…or do an equivalent in `/usr/local/bin`.
+However, either way, `sudo` won't pick it up.
+
 If you're developing a C or C++ program or library, and want Binodeps to simplify the maintenance of dependencies, there are [detailed instructions](https://scc-forge.lancaster.ac.uk/open/simpsons/software/pkg-binodeps).
