@@ -881,7 +881,7 @@ ifneq ($$($1_sover@$2),)
 @install-libraries@$2:: install-libdir@$2
 	@$$(INSTALL) -m 0755 $$(SLIBFILE.$1@$2) \
 	  $$(LIBDIR)/$$(SLIBLEAF.$1@$2).$$($1_sover@$2)
-	@$$(LN) -sfn $$(LIBDIR)/$$(SLIBLEAF.$1@$2).$$($1_SOMAJOR@$2) \
+	@$$(LN) -sfn $$(LIBDIR)/$$(SLIBLEAF.$1@$2).$$($1_sover@$2) \
 	  $$(LIBDIR)/$$(SLIBLEAF.$1@$2)
 endif
 
