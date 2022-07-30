@@ -893,17 +893,24 @@ endef
 ## $2 is the submodel.
 define DEPS4LIBRARIES
 ## Make sure we can detect changes to the list of object files that
-## make up each binary library.
+## make up each binary library.  Also detect changes to the soname for
+## a shared library.
 $$(BINODEPS_TMPDIR)/libobjlisted.$1.$2:
 	@$$(MKDIR) '$$(@D)'
 	@$$(TOUCH) '$$(BINODEPS_TMPDIR)/CACHEDIR.TAG'
 	@$$(PRINTF) > '$$(BINODEPS_TMPDIR)/libobjlist.$1.$2-tmp' '%s\n' \
 	  $$(sort $$($1_mod) $$($1_mod@$2))
+	@$$(PRINTF) > '$$(BINODEPS_TMPDIR)/soname.$1.$2-tmp' '%s\n' \
+	  $$($1_soname@$2)
 $$(BINODEPS_TMPDIR)/libobjlist.$1.$2: | $$(BINODEPS_TMPDIR)/libobjlisted.$1.$2
-$$(BINODEPS_TMPDIR)/libobjlist.$1.$2: $$(BINODEPS_TMPDIR)/libobjlisted.$1.$2
-	@$$(call CPCMP,$$@-tmp,$$@,$1 object list$(SUBMODEL_LABEL_IN@$2))
+$$(BINODEPS_TMPDIR)/libobjlist.$1.$2: $$(BINODEPS_TMPDIR)/libobjlist.$1.$2-tmp
+	@$$(call CPCMP,$$<,$$@,$1 object list$(SUBMODEL_LABEL_IN@$2))
+$$(BINODEPS_TMPDIR)/soname.$1.$2: | $$(BINODEPS_TMPDIR)/libobjlisted.$1.$2
+$$(BINODEPS_TMPDIR)/soname.$1.$2: $$(BINODEPS_TMPDIR)/soname.$1.$2-tmp
+	@$$(call CPCMP,$$<,$$@,$1 soname$(SUBMODEL_LABEL_IN@$2))
 
 ## Define the build rule.
+
 $$(LIBFILE.$1@$2): $$(BINODEPS_TMPDIR)/libobjlist.$1.$2 $$(LIBOBJS.$1@$2)
 	@$$(MKDIR) '$$(@D)'
 	@$$(TOUCH) '$$(BINODEPS_LIBDIR)/CACHEDIR.TAG'
@@ -913,7 +920,8 @@ $$(LIBFILE.$1@$2): $$(BINODEPS_TMPDIR)/libobjlist.$1.$2 $$(LIBOBJS.$1@$2)
 	@$$(AR@$2) r '$$@' $$(LIBOBJS.$1@$2)
 	@$$(RANLIB@$2) '$$@'
 
-$$(SLIBFILE.$1@$2): $$(BINODEPS_TMPDIR)/libobjlist.$1.$2 $$(SLIBOBJS.$1@$2)
+$$(SLIBFILE.$1@$2): $$(BINODEPS_TMPDIR)/soname.$1.$2 \
+		$$(BINODEPS_TMPDIR)/libobjlist.$1.$2 $$(SLIBOBJS.$1@$2)
 	@$$(MKDIR) '$$(@D)'
 	@$$(TOUCH) '$$(BINODEPS_LIBDIR)/CACHEDIR.TAG'
 	@$$(PRINTF) '[Link shared lib] %s%s:\n' '$1' '$(SUBMODEL_LABEL_IN@$2)'
