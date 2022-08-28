@@ -802,6 +802,7 @@ $$(BINODEPS_TMPDIR)/progobjlisted.$1.$2:
 	  '%s\n' $$(sort $$($1_obj) $$($1_obj@$2))
 $$(BINODEPS_TMPDIR)/progobjlist.$1.$2: | $$(BINODEPS_TMPDIR)/progobjlisted.$1.$2
 $$(BINODEPS_TMPDIR)/progobjlist.$1.$2: $$(BINODEPS_TMPDIR)/progobjlisted.$1.$2
+$$(BINODEPS_TMPDIR)/progobjlist.$1.$2:
 	@$$(call CPCMP,$$@-tmp,$$@,$1 object list$$(SUBMODEL_LABEL_IN@$2))
 
 ## Build binaries.
@@ -904,9 +905,11 @@ $$(BINODEPS_TMPDIR)/libobjlisted.$1.$2:
 	  $$($1_soname@$2)
 $$(BINODEPS_TMPDIR)/libobjlist.$1.$2: | $$(BINODEPS_TMPDIR)/libobjlisted.$1.$2
 $$(BINODEPS_TMPDIR)/libobjlist.$1.$2: $$(BINODEPS_TMPDIR)/libobjlist.$1.$2-tmp
+$$(BINODEPS_TMPDIR)/libobjlist.$1.$2:
 	@$$(call CPCMP,$$<,$$@,$1 object list$(SUBMODEL_LABEL_IN@$2))
 $$(BINODEPS_TMPDIR)/soname.$1.$2: | $$(BINODEPS_TMPDIR)/libobjlisted.$1.$2
 $$(BINODEPS_TMPDIR)/soname.$1.$2: $$(BINODEPS_TMPDIR)/soname.$1.$2-tmp
+$$(BINODEPS_TMPDIR)/soname.$1.$2:
 	@$$(call CPCMP,$$<,$$@,$1 soname$(SUBMODEL_LABEL_IN@$2))
 
 ## Define the build rule.
