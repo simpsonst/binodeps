@@ -105,6 +105,8 @@ WC ?= wc
 LN ?= ln
 LDCONFIG ?= ldconfig
 TOUCH ?= touch
+HTML2TXT ?= lynx -dump
+MARKDOWN ?= markdown
 
 BINODEPS_REAL_INCLUDE := $(dir $(word $(words $(MAKEFILE_LIST)), $(MAKEFILE_LIST)))
 BINODEPS_REAL_HOME1=$(BINODEPS_REAL_INCLUDE:%/include/=%)
@@ -974,6 +976,13 @@ $$(BINODEPS_OUTDIR_RISCOS)/$$($1_appname)/Source/$2$3/%,fff: \
 
 endef
 
+## TODO: This will have to be ZIP-specific.
+$(BINODEPS_TMPDIR)/riscos/%.html: $(BINODEPS_SHAREDIR_RISCOS)/%.md
+	@$(MKDIR) '$(@D)'
+	@$(TOUCH) '$(BINODEPS_TMPDIR)/CACHEDIR.TAG'
+	@$(PRINTF) '[Markdown to HTML; RISC OS] %s\n' '$*'
+	@$(MARKDOWN) '$<' > '$@'
+
 define RISCOS_APP_RULES
 $$(foreach sfx,$$(RISCOS_SUFFIXES), \
    $$(eval $$(call RISCOS_APP_SFXDIR_RULES,$1,,$$(sfx))) \
@@ -983,11 +992,29 @@ $$(foreach sfx,$$(RISCOS_SUFFIXES), \
 $$(foreach P,$$(BINARIES@riscos-rm), \
    $$(eval $$(call RISCOS_MODULE_RULES,$1,$$P)))
 
+$$(BINODEPS_OUTDIR_RISCOS)/$$($1_appname)/%,fff: $$(BINODEPS_TMPDIR)/riscos/$1/%.html
+	@$$(MKDIR) '$$(@D)'
+	@$$(TOUCH) '$$(BINODEPS_TMPDIR)/CACHEDIR.TAG'
+	@$$(PRINTF) '[HTML to RISC OS text] %s %s\n' '$1' '$$*'
+	@$$(HTML2TXT) '$$<' > '$$@'
+
+$$(BINODEPS_OUTDIR_RISCOS)/$$($1_appname)/%,fff: $$(BINODEPS_TMPDIR)/riscos/$1/%.txt
+	@$$(MKDIR) '$$(@D)'
+	@$$(TOUCH) '$$(BINODEPS_TMPDIR)/CACHEDIR.TAG'
+	@$$(PRINTF) '[Copy RISC OS text] %s %s\n' '$1' '$$*'
+	@$$(CP) --reflink=auto '$$<' '$$@'
+
 $$(BINODEPS_OUTDIR_RISCOS)/$$($1_appname)/%,faf: $$(BINODEPS_DOCDIR)/%.html
 	@$$(MKDIR) '$$(@D)'
 	@$$(TOUCH) '$$(BINODEPS_OUTDIR_RISCOS)/CACHEDIR.TAG'
 	@$$(PRINTF) '[Copy RISC OS HTML] %s %s\n' '$1' '$$*'
 	@$$(CP) --reflink=auto '$$<' '$$@'
+
+$$(BINODEPS_OUTDIR_RISCOS)/$$($1_appname)/%,faf: $$(BINODEPS_TMPDIR)/riscos/$1/%.html
+	@$$(MKDIR) '$$(@D)'
+	@$$(TOUCH) '$$(BINODEPS_TMPDIR)/CACHEDIR.TAG'
+	@$$(PRINTF) '[HTML to RISC OS] %s %s\n' '$1' '$$*'
+	@$$(CP) --reflink=auto '$$<' > '$$@'
 
 $$(BINODEPS_OUTDIR_RISCOS)/$$($1_appname)/%,fff: $$(BINODEPS_DOCDIR)/%
 	@$$(MKDIR) '$$(@D)'
@@ -1047,6 +1074,18 @@ endef
 
 define RISCOS_ZIP_RULES
 riscos-zip-$1 riscos-zips:: $$(BINODEPS_ZIPDIR_RISCOS)/$1-riscos.zip
+
+$$(BINODEPS_OUTDIR_RISCOS)/%,fff: $$(BINODEPS_TMPDIR)/riscos/%.html
+	@$$(MKDIR) '$$(@D)'
+	@$$(TOUCH) '$$(BINODEPS_OUTDIR_RISCOS)/CACHEDIR.TAG'
+	@$$(PRINTF) '[HTML to RISC OS text; zip] %s %s\n' '$1' '$$*'
+	@$$(HTML2TXT) '$$<' > '$$@'
+
+$$(BINODEPS_OUTDIR_RISCOS)/%,faf: $$(BINODEPS_TMPDIR)/riscos/%.html
+	@$$(MKDIR) '$$(@D)'
+	@$$(TOUCH) '$$(BINODEPS_OUTDIR_RISCOS)/CACHEDIR.TAG'
+	@$$(PRINTF) '[HTML to RISC OS; zip] %s %s\n' '$1' '$$*'
+	@$$(CP) --reflink=auto '$$<' '$$@'
 
 $$(BINODEPS_ZIPDIR_RISCOS)/$1-riscos.zip: \
   $$(foreach A,$$($1_apps), \
