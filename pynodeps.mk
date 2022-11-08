@@ -32,6 +32,9 @@
 ## Contributors:
 ##    Steven Simpson <https://github.com/simpsonst>
 
+
+PROTOC.py ?= protoc
+
 PYTHON_VERSIONS += 2.7
 PYTHON_VERSIONS += 3
 PYTHON_VERSIONS += 3.5
@@ -43,10 +46,13 @@ endef
 $(foreach V,$(PYTHON_VERSIONS),$(eval $(call PYTHON_DEFS,$V)))
 
 define PYTHON_TREE_DEFS
-$1_pyroot ?= $1
+$1_pyroot ?= src/python/$1
 $1_pyname ?= $1
-$1_py$2root ?= $($1_pyroot)
-$1_py$2name ?= $($1_pyname)
+# $1_py$2root ?= $($1_pyroot)
+# $1_py$2name ?= $($1_pyname)
+
+pyfiles_$1_raw=$$(shell $$(FIND) $$($1_pyroot) -name "*.py" -printf '%P\n')
+pyfiles_$1=$$(pyfiles_$1_raw:%.py=%)
 
 endef
 $(foreach V,$(PYTHON_VERSIONS),$(foreach T,$(python$V_zips),$(eval $(call PYTHON_TREE_DEFS,$T,$V))))
@@ -77,14 +83,42 @@ install-python:: install-python-modules install-python-zips
 
 define PYTHON_ZIP_CMDS
 $(INSTALL) -d '$(dir $(SHAREDIR)/python$2/$($1_pyname))'
-$(INSTALL) -m 0644 '$(BINODEPS_OUTDIR)/python$2/$1.zip' '$(SHAREDIR)/python$2/$($1_pyname).zip'
+$(INSTALL) -m 0644 '$(BINODEPS_OUTDIR)/python$2/$1.zip' \
+  '$(SHAREDIR)/python$2/$($1_pyname).zip'
 
 endef
 
 define PYTHON_TREE_DEPS
-$$(BINODEPS_OUTDIR)/python$2/$1.zip: $$($1_pyroot)
+## Copy Python source from source directory.
+$$(BINODEPS_TMPDIR)/python$2/src/$1/%.py: $$($1_pyroot)/%.py
+	@$$(PRINTF) '[Python %s ZIP] %s Copy source %s\n' '$2' '$1' '$*'
+	@$$(MKDIR) '$$(@D)'
+	@$$(CP) '$$<' '$$@'
+
+## Copy Protobuf-generated source.
+$$(BINODEPS_TMPDIR)/python$2/src/$1/%_pb2.py: \
+  $$(BINODEPS_TMPDIR)/protobuf/python/%_pb2.py
+	@$$(PRINTF) '[Python %s ZIP] %s Copy protobuf %s\n' '$2' '$1' '$*'
+	@$$(MKDIR) '$$(@D)'
+	@$$(CP) '$$<' '$$@'
+
+$$(BINODEPS_TMPDIR)/python$2/zips/$1.list: \
+  $$(BINODEPS_TMPDIR)/python$2/zips/$1.listed
+
+$$(BINODEPS_OUTDIR)/python$2/$1.zip: \
+  $$(BINODEPS_TMPDIR)/python$2/zips/$1.list \
+  $$(pyfiles_$1:%=$$(BINODEPS_TMPDIR)/python$2/src/$1/%.py) \
+  $$($1_pyproto:%=$$(BINODEPS_TMPDIR)/python$2/src/$1/%_pb2.py)
 
 endef
+
+## Build Python from Protobuf definitions.  There seems to be a
+## one-to-one relationship, and the result is version-independent.
+$(BINODEPS_TMPDIR)/protobuf/python/%_pb2.py: $(BINODEPS_PROTODIR)/%.proto
+	@$(PRINTF) '[Protobuf->Python] %s\n' '$*'
+	@$(MKDIR) '$(BINODEPS_TMPDIR)/protobuf/python/'
+	@$(PROTOC.py) '-I$(BINODEPS_PROTODIR)' \
+	  --python_out='$(BINODEPS_TMPDIR)/protobuf/python/' '$<'
 
 define PYTHON_VDEPS
 install-python:: install-python$1
@@ -108,33 +142,34 @@ install-python$1-zips::
 
 python-zips:: python-zips$1
 
-python-zips$1:: $$(foreach T,$$(python$1_zips),$$(BINODEPS_OUTDIR)/python$1/$$T.zip)
+python-zips$1:: \
+  $$(foreach T,$$(python$1_zips),$$(BINODEPS_OUTDIR)/python$1/$$T.zip)
 
--include $$(python$1_zips:%=$$(BINODEPS_TMPDIR_LOCAL)/python$1/zips/%.mk)
+#-include $$(python$1_zips:%=$$(BINODEPS_TMPDIR_LOCAL)/python$1/zips/%.mk)
 
 $$(foreach T,$$(python$1_zips),$$(eval $$(call PYTHON_TREE_DEPS,$$T,$1)))
 
+$$(BINODEPS_TMPDIR)/python$1/zips/%.listed:
+	@$$(MKDIR) '$$(@D)'
+	@$$(PRINTF) '%s\n' > '$$(BINODEPS_TMPDIR)/python$1/zips/$$*.list-tmp' \
+	  $$(sort $$(pyfiles_$$*:%=%.py) $$($$*_pyproto:%=%_pb2.py))
+
+$$(BINODEPS_TMPDIR)/python$1/zips/%.list:
+	@$$(call CPCMP,$$@-tmp,$$@,Python $1 zip $$* list)
+
 $$(BINODEPS_OUTDIR)/python$1/%.zip:
 	@$$(PRINTF) '[Python %s ZIP] %s from %s\n' '$1' '$$*' '$$($$*_pyroot)'
-	@$$(MKDIR) '$$(dir $$(BINODEPS_TMPDIR)/python$1/src/$$*)'
-	@$$(RM) -r '$$(BINODEPS_TMPDIR)/python$1/src/$$*'
-	@$$(CP) --reflink=auto -r '$$($$*_pyroot)' \
-	  '$$(BINODEPS_TMPDIR)/python$1/src/$$*'
-	@$$(PYTHON$1) -m compileall '$$(BINODEPS_TMPDIR)/python$1/src/$$*'
+	@$$(CD) '$$(BINODEPS_TMPDIR)/python$1/src/$$*' ; \
+	  $$(PYTHON$1) -m compileall -o 2 -b -q -f \
+	  $$(pyfiles_$$*:%=%.py) $$($$*_pyproto:%=%_pb2.py)
 	@$$(MKDIR) '$$(dir $$(BINODEPS_TMPDIR)/python$1/zips/$$*.zip)'
 	@$$(RM) '$$(BINODEPS_TMPDIR)/python$1/zips/$$*.zip'
 	@$$(BINODEPS_REAL_HOME)/share/binodeps/dirzip \
 	  --array CD $$(words $$(CD)) $$(CD:%='%') \
 	  --array ZIP $$(words $$(ZIP)) $$(ZIP:%='%') \
 	  --out='$$(BINODEPS_TMPDIR)/python$1/zips/$$*.zip' \
-	  --dir='$$(BINODEPS_TMPDIR)/python$1/src/$$*' \
-	  -qr -- . -i '*.py' '*.pyc'
-	@$$(FIND) '$$(BINODEPS_TMPDIR)/python$1/src/$$*' -mindepth 1 \
-	  \( -name "*.py" -o -type d \) \
-	  -printf '$$$$(BINODEPS_OUTDIR)/python$1/$$*.zip: $$($$*_pyroot)/%P\n' \
-	  > '$$(BINODEPS_TMPDIR)/python$1/zips/$$*.mk-tmp'
-	@$$(MV) '$$(BINODEPS_TMPDIR)/python$1/zips/$$*.mk-tmp' \
-	  '$$(BINODEPS_TMPDIR)/python$1/zips/$$*.mk'
+	  --dir='$$(BINODEPS_TMPDIR)/python$1/src/$$*' -qr -- \
+	  $$(pyfiles_$$*:%=%.py %.pyc) $$($$*_pyproto:%=%_pb2.py %_pb2.pyc)
 	@$$(MKDIR) '$$(@D)'
 	@$$(MV) '$$(BINODEPS_TMPDIR)/python$1/zips/$$*.zip' '$$@'
 
