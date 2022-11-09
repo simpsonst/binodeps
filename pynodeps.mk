@@ -160,7 +160,7 @@ $$(BINODEPS_TMPDIR)/python$1/zips/%.list:
 $$(BINODEPS_OUTDIR)/python$1/%.zip:
 	@$$(PRINTF) '[Python %s ZIP] %s from %s\n' '$1' '$$*' '$$($$*_pyroot)'
 	@$$(CD) '$$(BINODEPS_TMPDIR)/python$1/src/$$*' ; \
-	  $$(PYTHON$1) -m compileall -o 2 -b -q -f \
+	  $$(PYTHON$1) -m compileall -b -q -f \
 	  $$(pyfiles_$$*:%=%.py) $$($$*_pyproto:%=%_pb2.py)
 	@$$(MKDIR) '$$(dir $$(BINODEPS_TMPDIR)/python$1/zips/$$*.zip)'
 	@$$(RM) '$$(BINODEPS_TMPDIR)/python$1/zips/$$*.zip'
