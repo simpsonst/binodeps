@@ -169,7 +169,8 @@ $$(BINODEPS_OUTDIR)/python$1/%.zip:
 	  --array ZIP $$(words $$(ZIP)) $$(ZIP:%='%') \
 	  --out='$$(BINODEPS_TMPDIR)/python$1/zips/$$*.zip' \
 	  --dir='$$(BINODEPS_TMPDIR)/python$1/src/$$*' -qr -- \
-	  $$(pyfiles_$$*:%=%.py %.pyc) $$($$*_pyproto:%=%_pb2.py %_pb2.pyc)
+	  $$(pyfiles_$$*:%=%.py) $$($$*_pyproto:%=%_pb2.py) \
+	  $$(pyfiles_$$*:%=%.pyc) $$($$*_pyproto:%=%_pb2.pyc)
 	@$$(MKDIR) '$$(@D)'
 	@$$(MV) '$$(BINODEPS_TMPDIR)/python$1/zips/$$*.zip' '$$@'
 
