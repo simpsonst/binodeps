@@ -91,14 +91,14 @@ endef
 define PYTHON_TREE_DEPS
 ## Copy Python source from source directory.
 $$(BINODEPS_TMPDIR)/python$2/src/$1/%.py: $$($1_pyroot)/%.py
-	@$$(PRINTF) '[Python %s ZIP] %s Copy source %s\n' '$2' '$1' '$*'
+	@$$(PRINTF) '[Python %s ZIP] %s Copy source %s\n' '$2' '$1' '$$*'
 	@$$(MKDIR) '$$(@D)'
 	@$$(CP) '$$<' '$$@'
 
 ## Copy Protobuf-generated source.
 $$(BINODEPS_TMPDIR)/python$2/src/$1/%_pb2.py: \
   $$(BINODEPS_TMPDIR)/protobuf/python/%_pb2.py
-	@$$(PRINTF) '[Python %s ZIP] %s Copy protobuf %s\n' '$2' '$1' '$*'
+	@$$(PRINTF) '[Python %s ZIP] %s Copy protobuf %s\n' '$2' '$1' '$$*'
 	@$$(MKDIR) '$$(@D)'
 	@$$(CP) '$$<' '$$@'
 
