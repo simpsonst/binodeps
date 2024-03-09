@@ -1330,7 +1330,7 @@ $(INSTALLED_LIBFILES): $(headers:%=$(BINODEPS_HDRDIR)/%)
 
 test-binaries:: \
   $(foreach T,$(SUBMODELS_SORTED),\
-    $(foreach P,$(TEST_BINARIES@T),$(BINFILE.$P@$T)))
+    $(foreach P,$(TEST_BINARIES@$T),$(BINFILE.$P@$T)))
 test-libraries:: $(TEST_LIBFILES)
 
 
