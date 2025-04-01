@@ -98,7 +98,7 @@ TR ?= tr
 INSTALL ?= install
 CMHG ?= cmunge
 OS_UNAME := $(shell uname)
-PAR ?= par
+FMT ?= fmt
 TPUT ?= tput
 TPUT_COLS ?= $(TPUT)
 ECHO ?= echo
@@ -123,14 +123,10 @@ MKDIR ?= mkdir -p
 TERMWIDTH ?= $(shell $(TPUT_COLS) cols 2> /dev/null || $(ECHO) 80)
 FOLD ?= fmt -t -w $(TERMWIDTH)
 
-ifeq ($OS_UNAME,Darwin)
-PRINTLIST=$(PRINTF) $1'%s\n' $2 $3
-else
+## $1 is the prefix format string.  $2 is the arguments for the
+## prefix.  $3 is the list of words.
 PRINTLIST=$(PRINTF) $1'%s\n' $2 $3 \
-  | $(PAR) 'rTbgqR0E' 'B=.,?_A_a Q=_s>|' \
-    w$(TERMWIDTH) p$(shell $(PRINTF) $1 $2 \
-  | $(WC) -m)
-endif
+  | $(FMT) -w "$(TERMWIDTH)" -p $(shell $(PRINTF) $1 $2)
 
 ## A command to selectively copy a file if its contents has changed -
 ## $1 is the source; $2 is the destination; $3 is a label to print if
