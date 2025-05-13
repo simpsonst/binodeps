@@ -53,6 +53,8 @@ $1_pyname ?= $1
 
 pyfiles_$1_raw=$$(shell $$(FIND) $$($1_pyroot) -name "*.py" -printf '%P\n')
 pyfiles_$1=$$(pyfiles_$1_raw:%.py=%)
+pypkgs_$1=$$(shell $$(BINODEPS_REAL_HOME)/share/binodeps/alldirs $$(patsubst x/%,%,$$(sort $$(dir $$(pyfiles_$1:%=x/%) $$($1_pyproto:%=x/%_pb2)))))
+pypkgsmiss_$1=$$(patsubst %/__init__,%,$$(filter-out $$(pyfiles_$1),$$(pypkgs_$1:%=%/__init__)))
 
 endef
 $(foreach V,$(PYTHON_VERSIONS),$(foreach T,$(python$V_zips),$(eval $(call PYTHON_TREE_DEFS,$T,$V))))
@@ -102,13 +104,20 @@ $$(BINODEPS_TMPDIR)/python$2/src/$1/%_pb2.py: \
 	@$$(MKDIR) '$$(@D)'
 	@$$(CP) '$$<' '$$@'
 
+$$(pypkgsmiss_$1:%=$$(BINODEPS_TMPDIR)/python$2/src/$1/%/__init__.py):
+	@$$(PRINTF) '[Python %s ZIP] %s Namespace %s\n' '$2' '$1' \
+	  '$$(subst /,.,$$(@:$$(BINODEPS_TMPDIR)/python$2/src/$1/%/__init__.py=%))'
+	@$$(MKDIR) '$$(@D)'
+	@$$(CP) "$$(BINODEPS_REAL_HOME)/share/binodeps/nspkg.py" '$$@'
+
 $$(BINODEPS_TMPDIR)/python$2/zips/$1.list: \
   $$(BINODEPS_TMPDIR)/python$2/zips/$1.listed
 
 $$(BINODEPS_OUTDIR)/python$2/$1.zip: \
   $$(BINODEPS_TMPDIR)/python$2/zips/$1.list \
-  $$(pyfiles_$1:%=$$(BINODEPS_TMPDIR)/python$2/src/$1/%.py) \
-  $$($1_pyproto:%=$$(BINODEPS_TMPDIR)/python$2/src/$1/%_pb2.py)
+  $$(sort $$(pypkgs_$1:%=$$(BINODEPS_TMPDIR)/python$2/src/$1/%/__init__.py) \
+          $$(pyfiles_$1:%=$$(BINODEPS_TMPDIR)/python$2/src/$1/%.py) \
+          $$($1_pyproto:%=$$(BINODEPS_TMPDIR)/python$2/src/$1/%_pb2.py))
 
 endef
 
@@ -152,7 +161,9 @@ $$(foreach T,$$(python$1_zips),$$(eval $$(call PYTHON_TREE_DEPS,$$T,$1)))
 $$(BINODEPS_TMPDIR)/python$1/zips/%.listed:
 	@$$(MKDIR) '$$(@D)'
 	@$$(PRINTF) '%s\n' > '$$(BINODEPS_TMPDIR)/python$1/zips/$$*.list-tmp' \
-	  $$(sort $$(pyfiles_$$*:%=%.py) $$($$*_pyproto:%=%_pb2.py))
+	  $$(sort $$(pypkgs_$$*:%=%/__init__.py) \
+	          $$(pyfiles_$$*:%=%.py) \
+	          $$($$*_pyproto:%=%_pb2.py))
 
 $$(BINODEPS_TMPDIR)/python$1/zips/%.list:
 	@$$(call CPCMP,$$@-tmp,$$@,Python $1 zip $$* list)
@@ -161,7 +172,9 @@ $$(BINODEPS_OUTDIR)/python$1/%.zip:
 	@$$(PRINTF) '[Python %s ZIP] %s from %s\n' '$1' '$$*' '$$($$*_pyroot)'
 	@$$(CD) '$$(BINODEPS_TMPDIR)/python$1/src/$$*' ; \
 	  $$(PYTHON$1) -m compileall -b -q -f \
-	  $$(pyfiles_$$*:%=%.py) $$($$*_pyproto:%=%_pb2.py)
+	  $$(sort $$(pypkgs_$$*:%=%/__init__.py) \
+	          $$(pyfiles_$$*:%=%.py) \
+	          $$($$*_pyproto:%=%_pb2.py))
 	@$$(MKDIR) '$$(dir $$(BINODEPS_TMPDIR)/python$1/zips/$$*.zip)'
 	@$$(RM) '$$(BINODEPS_TMPDIR)/python$1/zips/$$*.zip'
 	@$$(BINODEPS_REAL_HOME)/share/binodeps/dirzip \
@@ -169,8 +182,9 @@ $$(BINODEPS_OUTDIR)/python$1/%.zip:
 	  --array ZIP $$(words $$(ZIP)) $$(ZIP:%='%') \
 	  --out='$$(BINODEPS_TMPDIR)/python$1/zips/$$*.zip' \
 	  --dir='$$(BINODEPS_TMPDIR)/python$1/src/$$*' -qr -- \
-	  $$(pyfiles_$$*:%=%.py) $$($$*_pyproto:%=%_pb2.py) \
-	  $$(pyfiles_$$*:%=%.pyc) $$($$*_pyproto:%=%_pb2.pyc)
+	  $$(sort $$(pypkgs_$$*:%=%/__init__.py) $$(pypkgs_$$*:%=%/__init__.pyc) \
+	          $$(pyfiles_$$*:%=%.py) $$($$*_pyproto:%=%_pb2.py) \
+	          $$(pyfiles_$$*:%=%.pyc) $$($$*_pyproto:%=%_pb2.pyc))
 	@$$(MKDIR) '$$(@D)'
 	@$$(MV) '$$(BINODEPS_TMPDIR)/python$1/zips/$$*.zip' '$$@'
 

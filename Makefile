@@ -44,4 +44,5 @@ install::
 	$(INSTALL) -d $(PREFIX)/include
 	$(INSTALL) -d $(PREFIX)/share/binodeps
 	$(INSTALL) -m 0644 binodeps.mk pynodeps.mk $(PREFIX)/include
-	$(INSTALL) -m 0755 rosymlink dirzip $(PREFIX)/share/binodeps
+	$(INSTALL) -m 0644 nspkg.py $(PREFIX)/share/binodeps
+	$(INSTALL) -m 0755 rosymlink dirzip alldirs $(PREFIX)/share/binodeps
